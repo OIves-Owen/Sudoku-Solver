@@ -2,8 +2,6 @@ let boxes = [];
 var cols = 9;
 var rows = 9;
 var s = 40;
-let memory;
-var moves = [];
 var guessed = false;
 var guessLoop = 0;
 var finText;
@@ -60,27 +58,45 @@ var sudoku3 = [
 ]
 
 //Choose sudoku
-var initial = sudoku3;
+var initial = sudoku2;
+
+var cnv;
+var btn;
+var started = false;
+var fps = 60;
 
 //p5's setup function is called once on load
 function setup() {
-  createCanvas(rows*s, rows*s+50);
+  cnv = createCanvas(rows*s, rows*s+50);
+  //give canvas a html parent
+  cnv.parent('sketch-holder');
   setupInitial();
+  btn = document.getElementById('button');
+  btn.addEventListener('click', () => {
+    console.log("let's go");
+    setupInitial();
+    loop();
+    done = false;
+    started = true;
+  });
+  frameRate(60);
 }
 
 //p5's draw function is called every frame
 function draw() {
-  background(200);
-  createValues();
-  placeValues();
+  background(255);
+  if(started == true){
+    createValues();
+    placeValues();
+  }
   display();
   //noLoop();
 }
 
-// Uses the sudoku array to fill the boxes matrix
+
+// Uses the sudoku array to fill the boxes multi-dimensional array
 function setupInitial(){
   guessed = false;
-  memory = [];
   for(let x = 0; x < cols; x++){
     boxes[x] = [];
     for(let y = 0; y < rows; y++){
@@ -149,7 +165,6 @@ function guess(){
         }
         if(av == true){
           boxes[x][y] = i;
-          memory = boxes;
           return;
         }
       }
@@ -200,7 +215,6 @@ function placeValues(){
       }
       if(available.length == 1){
         boxes[available[0][0]][available[0][1]] = i;
-        moves.push(available[0][0],available[0][1],i);
         console.log('PLACED NUMBER ' + available);
         return;
       }
@@ -222,7 +236,7 @@ function placeValues(){
 function display(){
 
   //grid
-  for(let x = 0; x < cols+1; x++){
+  for(let x = 1; x < cols+1; x++){
     if(x == 0 || x == 3 || x == 6 || x == 9){
       stroke(0);
     } else {
@@ -230,7 +244,7 @@ function display(){
     }
     line(x*s,0,x*s,cols*s);
   }
-  for(let y = 0; y < rows+1; y++){
+  for(let y = 1; y < rows+1; y++){
     if(y == 0 || y == 3 || y == 6 || y == 9){
       stroke(0);
     } else {
@@ -253,7 +267,7 @@ function display(){
   //finished text
   if(done==true){
     console.log(finText);
-    fill(0,255,0);
+    fill(0,150,0);
     text(finText,width/2-60,height-40,100,100);
   }
 }
