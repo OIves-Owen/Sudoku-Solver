@@ -58,89 +58,75 @@ var sudoku3 = [
 ]
 
 //Choose sudoku
-var initial = sudoku2;
-
+var seeder = sudoku1;
+var defaultbox = [1,2,3,4,5,6,7,8,9];
 var cnv;
 var btn;
 var started = false;
 var fps = 60;
-
+let grid = new Grid(seeder, sections);
 //p5's setup function is called once on load
 function setup() {
   cnv = createCanvas(rows*s, rows*s+50);
-  //give canvas a html parent
   cnv.parent('sketch-holder');
-  setupInitial();
+
   btn = document.getElementById('button');
   btn.addEventListener('click', () => {
     console.log("let's go");
-    setupInitial();
+    grid = new Grid(seeder, sections);
     loop();
     done = false;
     started = true;
   });
+
   frameRate(60);
 }
 
 //p5's draw function is called every frame
 function draw() {
-  background(255);
+    background(255);
   if(started == true){
-    createValues();
-    placeValues();
+    grid.readGrid();
+    grid.find_soleCandidate(sections);
+    grid.find_sameLine();
   }
   display();
-  //noLoop();
 }
 
 
-// Uses the sudoku array to fill the boxes multi-dimensional array
-function setupInitial(){
-  guessed = false;
-  for(let x = 0; x < cols; x++){
-    boxes[x] = [];
-    for(let y = 0; y < rows; y++){
-      boxes[x][y] = [];
-    }
-  }
-  for(i = 0; i < initial.length; i++){
-    let x = i % rows;
-    let y = Math.floor(i/rows);
-    if(initial[i] != 0){
-      boxes[x][y] = initial[i];
-    }
-  }
-  //console.log(JSON.parse(JSON.stringify(boxes)));
-}
 
 
-// Look at every square and declare the impossible values for it.
-function createValues(){
-  for (let x = 0; x < cols; x++){
-    for (let y = 0; y < rows; y++){
-      if(typeof(boxes[x][y]) == "object"){
-        boxes[x][y] = [];
-      }
-    }
-  }
-  for (let x = 0; x < cols; x++){
-    for (let y = 0; y < rows; y++){
-      if(typeof(boxes[x][y]) == "number"){
-        let num = boxes[x][y];
-        for (let i = 0; i < cols; i++){
-          if(typeof(boxes[i][y]) == "object"){
-            boxes[i][y].push(num);
-            //console.log(i,y,num);
-          }
-          if(typeof(boxes[x][i]) == "object"){
-            boxes[x][i].push(num);
-            //console.log(x,i,num);
-          }
-        }
-      }
-    }
-  }
-}
+
+// Look at every square and declare the possible values for it.
+// function createValues()
+// {
+//
+//   // Remove impossible values from Box values
+//   for (let x = 0; x < cols; x++){
+//     for (let y = 0; y < rows; y++){
+//
+//       if( grid.boxes[x][y].is_set() ){
+//         let num = grid.boxes[x][y].getValue();
+//         // newArray.push(num);
+//         // Remove this number from the grid.boxes in the same row / column;
+//         for (let i = 0; i < cols; i++){
+//           if( !grid.boxes[i][y].is_set() ){
+//             let array = grid.boxes[i][y];
+//             grid.boxes[i][y].removePossibility(num);
+//           }
+//
+//           if( !grid.boxes[x][i].is_set() ){
+//             let array = grid.boxes[x][i];
+//             grid.boxes[x][i].removePossibility(num);
+//           }
+//         }
+//       }
+//
+//     }
+//   }
+// }
+
+
 
 // randomly guess a new value and apply it if it works (needs refining)
 function guess(){
@@ -164,7 +150,7 @@ function guess(){
           if(boxes[x][y][j] == i){av = false}
         }
         if(av == true){
-          boxes[x][y] = i;
+          boxes[x][y].setValue(i);
           return;
         }
       }
@@ -175,62 +161,65 @@ function guess(){
 }
 
 // Place values
-function placeValues(){
-  let available = [];
-  //console.log(JSON.parse(JSON.stringify(boxes)));
-  let av;
-  for(let n = 0; n < sections.length; n++){
-    let numbers = [];
-    for(let x = sections[n][0]; x < sections[n][0]+3; x++){
-      for(let y = sections[n][1]; y < sections[n][1]+3; y++){
-        if(typeof(boxes[x][y]) == "number"){
-          numbers.push(boxes[x][y]);
-        }
-      }
-    }
-    for(let i = 1; i < cols+1; i++) {
-      let taken = false;
-      for(let o = 0; o < numbers.length; o++){
-        if(i == numbers[o]){taken = true;}
-      }
-      if(!taken){
-      for(let x = sections[n][0]; x < sections[n][0]+3; x++){
-        for(let y = sections[n][1]; y < sections[n][1]+3; y++){
-            if(typeof(boxes[x][y]) == "object"){
-              av = true;
-              for(let z = 0; z < boxes[x][y].length;z++){
-                if(boxes[x][y][z] == i){
-                  av = false;
-                  //console.log('failed'+JSON.parse(JSON.stringify(boxes[x][y])));
-                  break;
-                } else {
-                  //console.log('passed'+JSON.parse(JSON.stringify(boxes[x][y])));
-                }
-              }
-              if(av == true){available.push([x,y,i]);}
-              //console.log(JSON.parse(JSON.stringify(boxes[x][y])));
-            }
-          }
-        }
-      }
-      if(available.length == 1){
-        boxes[available[0][0]][available[0][1]] = i;
-        console.log('PLACED NUMBER ' + available);
-        return;
-      }
-      available = [];
-    }
-  }
-  let fin = checkFinished();
-  finished(fin);
-  if(fin == 0 || fin == 1 ){return;}
-  if(!guessed){
-    guess();
-  } else {
-    setupInitial();
-    guessed = false;
-  }
-}
+// function placeValues(){
+//   let available = [];
+//   let av;
+//   let placed = false;
+//
+//   // Loop through the sections
+//   for(let n = 0; n < sections.length; n++){
+//     let numbers = [];
+//
+//     // Get list of currently taken numbers in a 3x3 grid section
+//     for(let x = sections[n][0]; x < sections[n][0]+3; x++){
+//       for(let y = sections[n][1]; y < sections[n][1]+3; y++){
+//         if( grid.boxes[x][y].is_set() ){
+//           numbers.push(grid.boxes[x][y].getValue());
+//         }
+//       }
+//     }
+//
+//     // Create an array of currently untaken numbers in that section
+//     let untaken = [1,2,3,4,5,6,7,8,9];
+//     untaken = untaken.filter(function(value, index, arr) {
+//         for(let number of numbers) {
+//             if(value == number) {return false}
+//         }
+//         return true;
+//     });
+//
+//     //console.log(a);
+//
+//     for(let u of untaken) {
+//         for(let x = sections[n][0]; x < sections[n][0]+3; x++){
+//             for(let y = sections[n][1]; y < sections[n][1]+3; y++){
+//                 if(!grid.boxes[x][y].is_set()){
+//
+//                     // If the untaken number can go in the slot, add the position to the available list.
+//                     if(grid.boxes[x][y].has(u)){
+//                         available.push([x,y,u]);
+//                     }
+//                 }
+//             }
+//         }
+//
+//         console.log(available);
+//         // If the number can only go in one place. Then place that number in the slot.
+//         if(available.length == 1){
+//             grid.boxes[available[0][0]][available[0][1]].setValue(u);
+//             console.log('PLACED NUMBER ' + available);
+//             placed = true;
+//             //throw new Error("Placed a number!!" + available);
+//             return;
+//         }
+//         available = [];
+//       }
+//     }
+//     if(placed != true){
+//         matchingRow();
+//     }
+// }
+
 
 // Display grid and text
 function display(){
@@ -256,11 +245,11 @@ function display(){
   //text
   for(let x = 0; x < cols; x++){
     for(let y = 0; y < rows; y++){
-      if(typeof(boxes[x][y]) == "number"){
+      if(grid.boxes[x][y].is_set()){
         noStroke();
         fill(0);
         textSize(25);
-        text(boxes[x][y],x*s+s/3,y*s+s/7,(x*s)+s,(y*s)+s);
+        text(grid.boxes[x][y].getValue(), x*s+s/3, y*s+s/7, (x*s)+s, (y*s)+s);
       }
     }
   }
@@ -294,7 +283,7 @@ function checkFinished(){
   // If there are any empty boxes left, not finished
   for(let x = 0; x < cols; x++){
     for(let y = 0; y < rows; y++){
-      if(typeof(boxes[x][y]) == "number"){total++}
+      if(boxes[x][y].is_set()){total++}
     }
   }
   // Check for duplicates in 3x3 sections
@@ -304,8 +293,8 @@ function checkFinished(){
       let amount = 0;
       for(let x = sections[n][0]; x < sections[n][0]+3; x++){
         for(let y = sections[n][1]; y < sections[n][1]+3; y++){
-          if(typeof(boxes[x][y])=="object"){return -1}
-          if(boxes[x][y]==i){
+          if(!boxes[x][y].is_set()){return -1}
+          if(boxes[x][y].getValue() == i){
             amount++
           }
         }
